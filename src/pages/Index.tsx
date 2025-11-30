@@ -11,6 +11,9 @@ import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
 import { Toaster } from '@/components/ui/toaster';
+import ContractGenerator from '@/components/ContractGenerator';
+import ContractPreview from '@/components/ContractPreview';
+import { generateSimpleContractPDF } from '@/utils/pdfExport';
 import { 
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
@@ -60,7 +63,20 @@ export default function Index() {
   const [openPropertyDialog, setOpenPropertyDialog] = useState(false);
   const [openTenantDialog, setOpenTenantDialog] = useState(false);
   const [openDocumentDialog, setOpenDocumentDialog] = useState(false);
+  const [openContractGenerator, setOpenContractGenerator] = useState(false);
+  const [generatedContract, setGeneratedContract] = useState<any>(null);
   const { toast } = useToast();
+
+  const handleGenerateContract = (contract: any) => {
+    setGeneratedContract(contract);
+  };
+
+  const handleDownloadPDF = () => {
+    if (generatedContract) {
+      generateSimpleContractPDF(generatedContract);
+      toast({ title: 'Готово', description: 'Договор экспортирован в PDF' });
+    }
+  };
 
   const stats = [
     { title: 'Общая площадь', value: '12,500 м²', change: '+8%', icon: 'Building2', color: 'text-blue-500' },
@@ -99,6 +115,10 @@ export default function Index() {
             <Button variant="ghost" size="sm" onClick={() => setActiveTab('documents')}>
               <Icon name="FileText" className="mr-2 h-4 w-4" />
               Документы
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setActiveTab('contracts')}>
+              <Icon name="FileCheck" className="mr-2 h-4 w-4" />
+              Договоры
             </Button>
           </nav>
 
@@ -466,6 +486,38 @@ export default function Index() {
           </div>
         )}
 
+        {activeTab === 'contracts' && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-3xl font-bold">Формирование договора</h2>
+                <p className="text-muted-foreground">Создание договора аренды нежилого помещения</p>
+              </div>
+            </div>
+
+            <div className="grid lg:grid-cols-2 gap-6">
+              <div>
+                <ContractGenerator 
+                  properties={propertiesList}
+                  tenants={tenantsList}
+                  onGenerate={handleGenerateContract}
+                />
+              </div>
+              
+              {generatedContract && (
+                <div className="lg:sticky lg:top-24 h-fit">
+                  <div id="contract-preview">
+                    <ContractPreview 
+                      contract={generatedContract}
+                      onDownload={handleDownloadPDF}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {activeTab === 'documents' && (
           <div className="space-y-6 animate-fade-in">
             <div className="flex items-center justify-between">
@@ -473,13 +525,18 @@ export default function Index() {
                 <h2 className="text-3xl font-bold">Документы</h2>
                 <p className="text-muted-foreground">Договоры, счета и акты</p>
               </div>
-              <Dialog open={openDocumentDialog} onOpenChange={setOpenDocumentDialog}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Icon name="FilePlus" className="mr-2 h-4 w-4" />
-                    Создать документ
-                  </Button>
-                </DialogTrigger>
+              <div className="flex gap-2">
+                <Button onClick={() => setActiveTab('contracts')}>
+                  <Icon name="FileCheck" className="mr-2 h-4 w-4" />
+                  Создать договор
+                </Button>
+                <Dialog open={openDocumentDialog} onOpenChange={setOpenDocumentDialog}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline">
+                      <Icon name="FilePlus" className="mr-2 h-4 w-4" />
+                      Другой документ
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
                     <DialogTitle>Новый документ</DialogTitle>
@@ -542,7 +599,8 @@ export default function Index() {
                     </DialogFooter>
                   </form>
                 </DialogContent>
-              </Dialog>
+                </Dialog>
+              </div>
             </div>
 
             <Tabs defaultValue="all" className="w-full">
