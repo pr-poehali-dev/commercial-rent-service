@@ -3,7 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
+import { useToast } from '@/hooks/use-toast';
+import { Toaster } from '@/components/ui/toaster';
 import { 
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
@@ -47,6 +54,13 @@ const documents = [
 
 export default function Index() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [propertiesList, setPropertiesList] = useState(properties);
+  const [tenantsList, setTenantsList] = useState(tenants);
+  const [documentsList, setDocumentsList] = useState(documents);
+  const [openPropertyDialog, setOpenPropertyDialog] = useState(false);
+  const [openTenantDialog, setOpenTenantDialog] = useState(false);
+  const [openDocumentDialog, setOpenDocumentDialog] = useState(false);
+  const { toast } = useToast();
 
   const stats = [
     { title: 'Общая площадь', value: '12,500 м²', change: '+8%', icon: 'Building2', color: 'text-blue-500' },
@@ -210,14 +224,78 @@ export default function Index() {
                 <h2 className="text-3xl font-bold">Объекты недвижимости</h2>
                 <p className="text-muted-foreground">Управление коммерческой недвижимостью</p>
               </div>
-              <Button>
-                <Icon name="Plus" className="mr-2 h-4 w-4" />
-                Добавить объект
-              </Button>
+              <Dialog open={openPropertyDialog} onOpenChange={setOpenPropertyDialog}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Icon name="Plus" className="mr-2 h-4 w-4" />
+                    Добавить объект
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Новый объект недвижимости</DialogTitle>
+                    <DialogDescription>Заполните информацию о новом объекте</DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const newProperty = {
+                      id: propertiesList.length + 1,
+                      name: formData.get('name') as string,
+                      address: formData.get('address') as string,
+                      area: Number(formData.get('area')),
+                      tenants: 0,
+                      occupancy: 0,
+                      revenue: Number(formData.get('revenue')),
+                      status: formData.get('status') as string
+                    };
+                    setPropertiesList([...propertiesList, newProperty]);
+                    toast({ title: 'Успешно', description: 'Объект добавлен в каталог' });
+                    setOpenPropertyDialog(false);
+                  }} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Название объекта *</Label>
+                        <Input id="name" name="name" placeholder='БЦ "Северная Башня"' required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="status">Статус *</Label>
+                        <Select name="status" defaultValue="active" required>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="active">Активен</SelectItem>
+                            <SelectItem value="maintenance">Обслуживание</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="address">Адрес *</Label>
+                      <Input id="address" name="address" placeholder="ул. Ленина, 45" required />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="area">Площадь (м²) *</Label>
+                        <Input id="area" name="area" type="number" placeholder="2500" required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="revenue">Ожидаемый доход *</Label>
+                        <Input id="revenue" name="revenue" type="number" placeholder="850000" required />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button type="button" variant="outline" onClick={() => setOpenPropertyDialog(false)}>Отмена</Button>
+                      <Button type="submit">Добавить объект</Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              {properties.map((property) => (
+              {propertiesList.map((property) => (
                 <Card key={property.id} className="hover:shadow-lg transition-all hover:scale-[1.02]">
                   <CardHeader>
                     <div className="flex items-start justify-between">
@@ -272,10 +350,73 @@ export default function Index() {
                 <h2 className="text-3xl font-bold">Арендаторы</h2>
                 <p className="text-muted-foreground">Список активных арендаторов</p>
               </div>
-              <Button>
-                <Icon name="UserPlus" className="mr-2 h-4 w-4" />
-                Добавить арендатора
-              </Button>
+              <Dialog open={openTenantDialog} onOpenChange={setOpenTenantDialog}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Icon name="UserPlus" className="mr-2 h-4 w-4" />
+                    Добавить арендатора
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Новый арендатор</DialogTitle>
+                    <DialogDescription>Заполните информацию о новом арендаторе</DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const newTenant = {
+                      id: tenantsList.length + 1,
+                      name: formData.get('name') as string,
+                      property: formData.get('property') as string,
+                      area: Number(formData.get('area')),
+                      rent: Number(formData.get('rent')),
+                      contract: formData.get('contract') as string,
+                      status: 'active',
+                      payment: 'ok'
+                    };
+                    setTenantsList([...tenantsList, newTenant]);
+                    toast({ title: 'Успешно', description: 'Арендатор добавлен в систему' });
+                    setOpenTenantDialog(false);
+                  }} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="tenant-name">Название организации *</Label>
+                      <Input id="tenant-name" name="name" placeholder='ООО "ТехноПром"' required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="property">Объект недвижимости *</Label>
+                      <Select name="property" required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Выберите объект" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {propertiesList.map((prop) => (
+                            <SelectItem key={prop.id} value={prop.name}>{prop.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="tenant-area">Площадь (м²) *</Label>
+                        <Input id="tenant-area" name="area" type="number" placeholder="450" required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="rent">Арендная плата *</Label>
+                        <Input id="rent" name="rent" type="number" placeholder="180000" required />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="contract">Договор до *</Label>
+                      <Input id="contract" name="contract" type="date" required />
+                    </div>
+                    <DialogFooter>
+                      <Button type="button" variant="outline" onClick={() => setOpenTenantDialog(false)}>Отмена</Button>
+                      <Button type="submit">Добавить арендатора</Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
             </div>
 
             <Card>
@@ -294,7 +435,7 @@ export default function Index() {
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                      {tenants.map((tenant) => (
+                      {tenantsList.map((tenant) => (
                         <tr key={tenant.id} className="hover:bg-muted/30 transition-colors">
                           <td className="p-4 font-medium">{tenant.name}</td>
                           <td className="p-4 text-sm text-muted-foreground">{tenant.property}</td>
@@ -332,10 +473,76 @@ export default function Index() {
                 <h2 className="text-3xl font-bold">Документы</h2>
                 <p className="text-muted-foreground">Договоры, счета и акты</p>
               </div>
-              <Button>
-                <Icon name="FilePlus" className="mr-2 h-4 w-4" />
-                Создать документ
-              </Button>
+              <Dialog open={openDocumentDialog} onOpenChange={setOpenDocumentDialog}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Icon name="FilePlus" className="mr-2 h-4 w-4" />
+                    Создать документ
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Новый документ</DialogTitle>
+                    <DialogDescription>Выберите тип документа и заполните данные</DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const docType = formData.get('docType') as string;
+                    const docNames: Record<string, string> = {
+                      contract: 'Договор аренды',
+                      invoice: 'Счет',
+                      act: 'Акт выполненных работ'
+                    };
+                    const newDoc = {
+                      id: documentsList.length + 1,
+                      type: docType,
+                      name: `${docNames[docType]} №${Math.floor(Math.random() * 1000)} от ${new Date().toLocaleDateString('ru-RU')}`,
+                      tenant: formData.get('tenant') as string,
+                      date: new Date().toLocaleDateString('ru-RU'),
+                      status: 'signed'
+                    };
+                    setDocumentsList([...documentsList, newDoc]);
+                    toast({ title: 'Успешно', description: 'Документ создан и готов к скачиванию' });
+                    setOpenDocumentDialog(false);
+                  }} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="docType">Тип документа *</Label>
+                      <Select name="docType" required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Выберите тип" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="contract">Договор аренды</SelectItem>
+                          <SelectItem value="invoice">Счет / Счет-фактура</SelectItem>
+                          <SelectItem value="act">Акт выполненных работ</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="doc-tenant">Арендатор *</Label>
+                      <Select name="tenant" required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Выберите арендатора" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {tenantsList.map((tenant) => (
+                            <SelectItem key={tenant.id} value={tenant.name}>{tenant.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="notes">Примечания</Label>
+                      <Textarea id="notes" name="notes" placeholder="Дополнительная информация..." rows={3} />
+                    </div>
+                    <DialogFooter>
+                      <Button type="button" variant="outline" onClick={() => setOpenDocumentDialog(false)}>Отмена</Button>
+                      <Button type="submit">Создать документ</Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
             </div>
 
             <Tabs defaultValue="all" className="w-full">
@@ -346,7 +553,7 @@ export default function Index() {
                 <TabsTrigger value="acts">Акты</TabsTrigger>
               </TabsList>
               <TabsContent value="all" className="space-y-4 mt-6">
-                {documents.map((doc) => (
+                {documentsList.map((doc) => (
                   <Card key={doc.id} className="hover:shadow-md transition-shadow">
                     <CardContent className="flex items-center justify-between p-6">
                       <div className="flex items-center gap-4">
@@ -391,6 +598,7 @@ export default function Index() {
           </div>
         )}
       </main>
+      <Toaster />
     </div>
   );
 }
